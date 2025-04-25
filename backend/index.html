@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire d'Examen</title>
+</head>
+<body>
+    <h1>Formulaire de Création d'Examen</h1>
+    <form action="#" method="POST">
+        <div>
+            <label for="exam_name">Nom de l'examen :</label>
+            <input type="text" id="exam_name" name="exam_name" required>
+        </div>
+
+        <div>
+            <label for="duration">Durée de l'examen (en minutes) :</label>
+            <input type="number" id="duration" name="duration" required>
+        </div>
+
+        <div>
+            <label for="description">Description :</label>
+            <textarea id="description" name="description" rows="4" cols="50" required></textarea>
+        </div>
+
+        <div>
+            <label for="owner_name">Nom du propriétaire :</label>
+            <input type="text" id="owner_name" name="owner_name" required>
+        </div>
+
+        <div>
+            <button type="submit">Soumettre</button>
+        </div>
+    </form>
+</body>
+</html>
