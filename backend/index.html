@@ -1,36 +1,103 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulaire d'Examen</title>
+  <meta charset="UTF-8">
+  <title>Inscription</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form {
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px;
+      width: 100%;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Formulaire de Création d'Examen</h1>
-    <form action="#" method="POST">
-        <div>
-            <label for="exam_name">Nom de l'examen :</label>
-            <input type="text" id="exam_name" name="exam_name" required>
-        </div>
 
-        <div>
-            <label for="duration">Durée de l'examen (en minutes) :</label>
-            <input type="number" id="duration" name="duration" required>
-        </div>
+  <h2>Formulaire d'inscription</h2>
 
-        <div>
-            <label for="description">Description :</label>
-            <textarea id="description" name="description" rows="4" cols="50" required></textarea>
-        </div>
+  <form action="/inscription" method="POST">
+    
+    <label for="type">Type d'utilisateur :</label>
+    <select id="type" name="type" required onchange="afficherChamps()">
+      <option value="">-- Sélectionner --</option>
+      <option value="etudiant">Étudiant</option>
+      <option value="enseignant">Enseignant</option>
+    </select>
 
-        <div>
-            <label for="owner_name">Nom du propriétaire :</label>
-            <input type="text" id="owner_name" name="owner_name" required>
-        </div>
+    <!-- Champs communs -->
+    <div id="champsCommuns">
+      <label for="email">Adresse e-mail :</label>
+      <input type="email" id="email" name="email" required>
 
-        <div>
-            <button type="submit">Soumettre</button>
-        </div>
-    </form>
+      <label for="nom">Nom :</label>
+      <input type="text" id="nom" name="nom" required>
+
+      <label for="prenom">Prénom :</label>
+      <input type="text" id="prenom" name="prenom" required>
+
+      <label for="etablissement">Établissement :</label>
+      <input type="text" id="etablissement" name="etablissement" required>
+    </div>
+
+    <!-- Champs spécifiques à l'étudiant -->
+    <div id="champsEtudiant" class="hidden">
+      <label for="date_naissance">Date de naissance :</label>
+      <input type="date" id="date_naissance" name="date_naissance">
+
+      <label for="sexe">Sexe :</label>
+      <select id="sexe" name="sexe">
+        <option value="">-- Sélectionner --</option>
+        <option value="masculin">Masculin</option>
+        <option value="feminin">Féminin</option>
+        <option value="autre">Autre</option>
+      </select>
+
+      <label for="filiere">Filière :</label>
+      <input type="text" id="filiere" name="filiere">
+    </div>
+
+    <button type="submit">S'inscrire</button>
+  </form>
+
+  <script>
+    function afficherChamps() {
+      const type = document.getElementById('type').value;
+      const champsEtudiant = document.getElementById('champsEtudiant');
+
+      if (type === 'etudiant') {
+        champsEtudiant.classList.remove('hidden');
+      } else {
+        champsEtudiant.classList.add('hidden');
+      }
+    }
+  </script>
+
 </body>
 </html>
