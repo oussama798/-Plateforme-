@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Profil</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 40px;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+
+      p {
+        text-align: center;
+        font-size: 18px;
+        color: #555;
+      }
+
+      .logout {
+        display: block;
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .logout a {
+        background-color: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 6px;
+      }
+
+      .logout a:hover {
+        background-color: #c82333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Profil utilisateur</h1>
+      <p>Bienvenue, <strong id="username">Nom Utilisateur</strong> 👋</p>
+
+      <div class="logout">
+        <a href="/logout">Déconnexion</a>
+      </div>
+    </div>
+
+    <script>
+      // Requête pour récupérer les données de l'utilisateur connecté
+      fetch("/api/user")
+        .then((response) => {
+          if (!response.ok) throw new Error("Non connecté");
+          return response.json();
+        })
+        .then((data) => {
+          document.getElementById("username").textContent = data.nom;
+        })
+        .catch(() => {
+          // Rediriger vers la page d'accueil si non connecté
+          window.location.href = "/";
+        });
+    </script>
+  </body>
+</html>
