@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ajout de Question</title>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+        background-color: #f9f9f9;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+      }
+      input,
+      textarea,
+      select,
+      button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        margin-top: 20px;
+      }
+      .option-container {
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Ajouter une question</h2>
+      <form id="questionForm">
+        <label>Type de question:</label>
+        <select id="type" required>
+          <option value="qcm">QCM</option>
+          <option value="directe">Directe</option>
+        </select>
+
+        <label>Énoncé:</label>
+        <textarea id="enonce" required></textarea>
+
+        <label>Fichier média (image/audio/vidéo - lien):</label>
+        <input type="text" id="media" />
+
+        <div id="qcm-fields" style="display: none">
+          <label>Options:</label>
+          <div id="options">
+            <div class="option-container">
+              <input type="text" class="option" placeholder="Option 1" />
+            </div>
+          </div>
+          <button type="button" onclick="ajouterOption()">
+            ➕ Ajouter option
+          </button>
+
+          <label>Bonnes réponses (séparées par des virgules):</label>
+          <input
+            type="text"
+            id="bonnes_reponses"
+            placeholder="ex: Option 1,Option 2"
+          />
+        </div>
+
+        <div id="directe-fields" style="display: none">
+          <label>Réponse attendue:</label>
+          <input type="text" id="reponse_directe" />
+
+          <label>Tolérance (%):</label>
+          <input type="number" id="tolerance" value="0" />
+        </div>
+
+        <label>Note (ex: 2.5):</label>
+        <input type="number" id="note" step="0.1" required />
+
+        <label>Durée (en secondes):</label>
+        <input type="number" id="duree" required />
+
+        <button type="submit">Ajouter la question</button>
+      </form>
+
+      <div id="resultat" style="margin-top: 20px; font-weight: bold"></div>
+    </div>
+
+    <script>
+      document.getElementById("type").addEventListener("change", function () {
+        const type = this.value;
+        document.getElementById("qcm-fields").style.display =
+          type === "qcm" ? "block" : "none";
+        document.getElementById("directe-fields").style.display =
+          type === "directe" ? "block" : "none";
+      });
+
+      function ajouterOption() {
+        const div = document.createElement("div");
+        div.className = "option-container";
+        div.innerHTML = `<input type="text" class="option" placeholder="Option" />`;
+        document.getElementById("options").appendChild(div);
+      }
+
+      document
+        .getElementById("questionForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const type = document.getElementById("type").value;
+          const enonce = document.getElementById("enonce").value.trim();
+          const media = document.getElementById("media").value.trim();
+          const note = parseFloat(document.getElementById("note").value);
+          const duree = parseInt(document.getElementById("duree").value);
+
+          let data = {
+            type,
+            enonce,
+            media,
+            note,
+            duree,
+          };
+
+          if (type === "qcm") {
+            const options = Array.from(document.querySelectorAll(".option"))
+              .map((el) => el.value.trim())
+              .filter((opt) => opt !== "");
+
+            const bonnes_reponses = document
+              .getElementById("bonnes_reponses")
+              .value.split(",")
+              .map((r) => r.trim())
+              .filter((r) => r !== "");
+
+            if (options.length < 2 || bonnes_reponses.length === 0) {
+              document.getElementById("resultat").textContent =
+                "Erreur: Les options et les bonnes réponses sont obligatoires.";
+              return;
+            }
+
+            data.options = options;
+            data.bonnes_reponses = bonnes_reponses;
+          } else if (type === "directe") {
+            const reponse_directe = document
+              .getElementById("reponse_directe")
+              .value.trim();
+            const tolerance = parseFloat(
+              document.getElementById("tolerance").value
+            );
+
+            if (!reponse_directe) {
+              document.getElementById("resultat").textContent =
+                "Erreur: Réponse attendue requise.";
+              return;
+            }
+
+            data.reponse_directe = reponse_directe;
+            data.tolerance = isNaN(tolerance) ? 0 : tolerance;
+          }
+
+          try {
+            const res = await fetch("/api/examen/question", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const json = await res.json();
+
+            if (res.ok) {
+              document.getElementById("resultat").textContent =
+                json.message || "Question ajoutée avec succès.";
+              document.getElementById("questionForm").reset();
+              document.getElementById("qcm-fields").style.display = "none";
+              document.getElementById("directe-fields").style.display = "none";
+              document.getElementById("options").innerHTML = `
+              <div class="option-container">
+                <input type="text" class="option" placeholder="Option 1" />
+              </div>
+            `;
+            } else {
+              document.getElementById("resultat").textContent =
+                json.error || "Erreur inconnue.";
+            }
+          } catch (error) {
+            document.getElementById("resultat").textContent = "Erreur réseau.";
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Créer un examen</title>
+    <style>
+      body {
+        font-family: Arial;
+        background: #f4f4f4;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        max-width: 800px;
+        margin: auto;
+        border-radius: 10px;
+      }
+      label {
+        margin-top: 10px;
+        display: block;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 5px;
+      }
+      .question {
+        border: 1px solid #ccc;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Créer un examen</h2>
+      <form id="examForm">
+        <label>Titre:</label>
+        <input type="text" id="titre" required />
+
+        <label>Description:</label>
+        <textarea id="description"></textarea>
+
+        <label>Public ciblé:</label>
+        <input type="text" id="public" required />
+
+        <label for="questionType">Type de question:</label>
+        <select id="questionType" name="type">
+          <option value="QCM">QCM</option>
+          <option value="Direct">Direct</option>
+        </select>
+
+        <div id="qcmOptions" style="display: none">
+          <label for="choices">Choix:</label>
+          <input
+            type="text"
+            id="choice1"
+            name="choice1"
+            placeholder="Choix 1"
+          />
+          <input
+            type="text"
+            id="choice2"
+            name="choice2"
+            placeholder="Choix 2"
+          />
+          <input
+            type="text"
+            id="choice3"
+            name="choice3"
+            placeholder="Choix 3"
+          />
+          <input
+            type="text"
+            id="choice4"
+            name="choice4"
+            placeholder="Choix 4"
+          />
+        </div>
+
+        <div id="directAnswer" style="display: none">
+          <label for="answer">Réponse directe:</label>
+          <input type="text" id="answer" name="answer" placeholder="Réponse" />
+        </div>
+
+        <label for="duration">Durée (en minutes):</label>
+        <input
+          type="number"
+          id="duration"
+          name="duration"
+          placeholder="Durée"
+        />
+
+        <label for="score">Note:</label>
+        <input type="number" id="score" name="score" placeholder="Note" />
+
+        <div id="tolerance" style="display: none">
+          <label for="toleranceValue">Tolérance (en %):</label>
+          <input
+            type="number"
+            id="toleranceValue"
+            name="tolerance"
+            placeholder="Tolérance"
+          />
+        </div>
+
+        <button type="submit">Créer l'examen</button>
+      </form>
+
+      <div id="resultat"></div>
+    </div>
+
+    <script>
+      // Gestion de l'affichage des options en fonction du type de question sélectionné
+      document
+        .getElementById("questionType")
+        .addEventListener("change", function () {
+          let type = this.value;
+          if (type === "QCM") {
+            document.getElementById("qcmOptions").style.display = "block";
+            document.getElementById("directAnswer").style.display = "none";
+            document.getElementById("tolerance").style.display = "none";
+          } else {
+            document.getElementById("qcmOptions").style.display = "none";
+            document.getElementById("directAnswer").style.display = "block";
+            document.getElementById("tolerance").style.display = "block";
+          }
+        });
+
+      document
+        .getElementById("examForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          // Préparer les données à envoyer
+          const data = {
+            titre: document.getElementById("titre").value,
+            description: document.getElementById("description").value,
+            public: document.getElementById("public").value,
+            questionType: document.getElementById("questionType").value,
+            choices: [
+              document.getElementById("choice1").value,
+              document.getElementById("choice2").value,
+              document.getElementById("choice3").value,
+              document.getElementById("choice4").value,
+            ],
+            answer: document.getElementById("answer").value,
+            duration: document.getElementById("duration").value,
+            score: document.getElementById("score").value,
+            tolerance: document.getElementById("toleranceValue").value,
+          };
+
+          // Envoi des données via l'API
+          const res = await fetch("/api/examen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+
+          const json = await res.json();
+          document.getElementById("resultat").textContent =
+            json.message + " | Lien : " + json.lien;
+        });
+    </script>
+  </body>
+</html>

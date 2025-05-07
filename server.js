@@ -1,33 +1,40 @@
+// ✅ Importations nécessaires
 const express = require("express");
 const session = require("express-session");
 const bodyParser = require("body-parser");
 const path = require("path");
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const { check, validationResult } = require("express-validator");
 
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-// Configuration de la session
+// ✅ Middleware
+app.use(express.static(path.join(__dirname, "public")));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(
   session({
     secret: "cle_secrete_session",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }, // false si vous n'utilisez pas HTTPS
+    cookie: { secure: false },
   })
 );
 
-// Connexion à la base de données MongoDB (sans options dépréciées)
+// ✅ Connexion à MongoDB
 mongoose
-  .connect("mongodb://127.0.0.1:27017/gestion_examens")
+  .connect("mongodb://127.0.0.1:27017/gestion_examens", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("✅ Base de données connectée"))
   .catch((err) => console.error("❌ Erreur de connexion DB:", err));
 
-// Définition du schéma utilisateur
+// ✅ Schémas & modèles
 const utilisateurSchema = new mongoose.Schema({
   type: String,
-  email: String,
+  email: { type: String, unique: true },
   nom: String,
   prenom: String,
   etablissement: String,
@@ -36,47 +43,127 @@ const utilisateurSchema = new mongoose.Schema({
   sexe: String,
   filiere: String,
 });
-
-// Création du modèle
 const Utilisateur = mongoose.model("Utilisateur", utilisateurSchema);
+const Examen = require("./models/examen");
 
-// Routes
-app.post("/inscription", async (req, res) => {
-  try {
-    const nouveauUtilisateur = new Utilisateur(req.body);
-    await nouveauUtilisateur.save();
-    res.send("✅ Inscription réussie !");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("❌ Erreur lors de l'inscription");
-  }
+// ✅ Routes
+
+// 📌 Inscription
+app.post("/inscription", [...], async (req, res) => {
+  // الكود ديال التحقق والتسجيل هنا
 });
 
+// 📌 Connexion
 app.post("/connexion", async (req, res) => {
-  const { email, mot_de_passe } = req.body;
-  const utilisateur = await Utilisateur.findOne({ email, mot_de_passe });
-  if (utilisateur) {
-    req.session.utilisateur = utilisateur.nom;
-    res.redirect("/profil.html");
-  } else {
-    res.send("❌ Identifiants invalides");
-  }
+  // الكود ديال التحقق من البريد وكلمة السر وحفظ session
 });
 
-app.get("/profil", (req, res) => {
-  if (req.session.utilisateur) {
-    res.send(`Bienvenue ${req.session.utilisateur}`);
-  } else {
-    res.status(401).send("Accès refusé");
-  }
+// 📌 Profil
+app.get("/profil", async (req, res) => {
+  // إرجاع معلومات المستخدم إذا كان مسجل الدخول
 });
 
+// 📌 Déconnexion
 app.get("/logout", (req, res) => {
-  req.session.destroy();
-  res.redirect("/");
+  req.session.destroy((err) => {
+    if (err) return res.status(500).send("❌ Erreur déconnexion");
+    res.redirect("/");
+  });
 });
 
-// Lancement du serveur
+// 📌 Création d'examen
+app.post("/api/examen", async (req, res) => {
+  try {
+    if (!req.session.userId) return res.status(401).send("❌ Connectez-vous");
+    const { titre, description, public: estPublic } = req.body;
+    const lien = `exam-${Math.random().toString(36).substr(2, 9)}`;
+    const examen = new Examen({
+      titre,
+      description,
+      public: estPublic,
+      lien,
+      enseignant_id: req.session.userId,
+      questions: [], // init vide
+    });
+    await examen.save();
+    res.json({ message: "✅ Examen créé", lien });
+  } catch (err) {
+    res.status(500).json({ error: "❌ Erreur création examen" });
+  }
+});
+
+// 📌 Ajout question
+app.post("/api/question", async (req, res) => {
+  try {
+    const {
+      lien,
+      type,
+      enonce,
+      media,
+      options,
+      bonnes_reponses,
+      reponse_directe,
+      tolerance,
+      note,
+      duree,
+    } = req.body;
+
+    const examen = await Examen.findOne({ lien });
+    if (!examen) return res.status(404).json({ error: "Examen non trouvé" });
+
+    examen.questions.push({
+      type,
+      enonce,
+      media,
+      options,
+      bonnes_reponses,
+      reponse_directe,
+      tolerance,
+      note,
+      duree,
+    });
+
+    await examen.save();
+    res.json({ message: "✅ Question ajoutée" });
+  } catch (err) {
+    res.status(500).json({ error: "❌ Erreur ajout question" });
+  }
+});
+
+// 📌 Modifier question
+app.put("/api/question/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const examen = await Examen.findOne({ "questions._id": id });
+    if (!examen) return res.status(404).json({ "Question non trouvée" });
+
+    const question = examen.questions.id(id);
+    question.set(req.body);
+
+    await examen.save();
+    res.json({ message: "✅ Question modifiée" });
+  } catch (err) {
+    res.status(500).json({ error: "❌ Erreur modification question" });
+  }
+});
+
+// 📌 Supprimer question
+app.delete("/api/question/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const examen = await Examen.findOne({ "questions._id": id });
+    if (!examen) return res.status404).json({ error: "Question non trouvée" });
+
+    examen.questions.id(id).remove();
+
+    await examen.save();
+    res.json({ message: "✅ Question supprimée" });
+  } catch (err) {
+    res.status(500).json({ error: "❌ Erreur suppression question" });
+  }
+});
+
+// ✅ Démarrer serveur
 app.listen(3000, () =>
   console.log("✅ Serveur lancé sur http://localhost:3000")
 );
