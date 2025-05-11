@@ -1,35 +1,35 @@
 const express = require("express");
 const router = express.Router();
-const Question = require("../models/question"); // نحتاج نضيف هاد الموديل
+const Question = require("../models/question");
 
-router.post("/addQuestion", async (req, res) => {
-  const {
-    type,
-    question,
-    choices,
-    answer,
-    duration,
-    score,
-    tolerance,
-    exam_id,
-  } = req.body;
-
-  const newQuestion = new Question({
-    type,
-    question,
-    choices,
-    answer,
-    duration,
-    score,
-    tolerance,
-    exam_id,
-  });
-
+// POST /add-question
+router.post("/add-question", async (req, res) => {
   try {
+    const {
+      examId,
+      questionType,
+      questionStatement,
+      options,
+      correctAnswers,
+      tolerance,
+      score,
+      duration,
+    } = req.body;
+
+    const newQuestion = new Question({
+      examId,
+      questionType,
+      questionStatement,
+      options: options.split(",").map((opt) => opt.trim()),
+      correctAnswers: correctAnswers.split(",").map((ans) => ans.trim()),
+      tolerance,
+      score,
+      duration,
+    });
     await newQuestion.save();
-    res.json({ message: "✅ Question ajoutée avec succès" });
-  } catch (error) {
-    res.status(500).json({ message: "❌ Erreur lors de l’ajout" });
+    res.send("Question ajoutée avec succès !");
+  } catch (err) {
+    res.status(500).send("Erreur lors de l'ajout de la question.");
   }
 });
 

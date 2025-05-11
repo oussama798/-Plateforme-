@@ -118,7 +118,7 @@
 
     <div class="container hidden" id="formConnexion">
       <h2>Connexion</h2>
-      <form action="/connexion" method="POST">
+      <form id="form-connexion">
         <label for="loginEmail">Email :</label>
         <input type="email" id="loginEmail" name="email" required />
 
@@ -161,6 +161,41 @@
         document.getElementById("formConnexion").classList.add("hidden");
         document.getElementById("formInscription").classList.remove("hidden");
       }
+
+      // ✅ Gestion de la connexion avec redirection automatique
+      document
+        .getElementById("form-connexion")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const email = document.getElementById("loginEmail").value;
+          const mot_de_passe = document.getElementById("loginPassword").value;
+
+          try {
+            const response = await fetch("/connexion", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, mot_de_passe }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              if (data.utilisateur.type === "enseignant") {
+                window.location.href = "/create_add_question.html";
+              } else if (data.utilisateur.type === "etudiant") {
+                window.location.href = "/exam.html";
+              } else {
+                alert("❌ Type d'utilisateur inconnu");
+              }
+            } else {
+              alert(data.message || "❌ Échec de la connexion");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("❌ Erreur serveur");
+          }
+        });
     </script>
   </body>
 </html>

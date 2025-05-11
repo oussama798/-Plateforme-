@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accéder à l'examen</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f6f9;
+        padding: 30px;
+        color: #333;
+      }
+      h1 {
+        text-align: center;
+        color: #007bff;
+      }
+      #timer {
+        text-align: center;
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: #d9534f;
+        margin-bottom: 25px;
+      }
+      form {
+        background-color: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: auto;
+      }
+      .question-block {
+        margin-bottom: 25px;
+      }
+      .question-block h3 {
+        margin-bottom: 10px;
+        color: #343a40;
+      }
+      .question-block label {
+        display: block;
+        margin: 4px 0;
+      }
+      button {
+        display: block;
+        margin: 20px auto 0;
+        padding: 12px 30px;
+        font-size: 1rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #resultat {
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-top: 30px;
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>أدخل الرابط الخاص بالامتحان</h1>
+
+    <form id="exam-link-form">
+      <label for="lien-unique">الرابط الفريد للامتحان:</label>
+      <input
+        type="text"
+        id="lien-unique"
+        name="lien_unique"
+        required
+        placeholder="أدخل الرابط الفريد هنا"
+      />
+      <button type="submit">الولوج للامتحان</button>
+    </form>
+
+    <div id="exam-container" style="display: none">
+      <h1>Passer l'examen</h1>
+      <div id="timer">Temps restant : <span id="time">--:--</span></div>
+      <form id="exam-form"></form>
+      <div id="resultat"></div>
+    </div>
+
+    <script>
+      let examData; // rendre global
+
+      document
+        .getElementById("exam-link-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const lienUnique = document
+            .getElementById("lien-unique")
+            .value.trim();
+
+          if (lienUnique) {
+            document.getElementById("exam-link-form").style.display = "none";
+            document.getElementById("exam-container").style.display = "block";
+
+            chargerExamen(lienUnique);
+          } else {
+            alert("يرجى إدخال رابط فريد صالح.");
+          }
+        });
+
+      async function chargerExamen(lienUnique) {
+        const res = await fetch(`/examens/api/${lienUnique}/questions`);
+        const data = await res.json();
+        examData = data;
+
+        let duree = examData.duree || 10;
+        demarrerTimer(duree);
+
+        const form = document.getElementById("exam-form");
+
+        examData.questions.forEach((q, index) => {
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-block");
+
+          const questionTitle = document.createElement("h3");
+          questionTitle.textContent = `Question ${index + 1}: ${q.enonce}`;
+          questionDiv.appendChild(questionTitle);
+
+          if (q.choix && q.choix.length > 0) {
+            q.choix.forEach((option, optIndex) => {
+              const input = document.createElement("input");
+              input.type = "checkbox";
+              input.name = `question-${index}`;
+              input.value = option;
+
+              const label = document.createElement("label");
+              label.appendChild(input);
+              label.append(` ${option}`);
+
+              questionDiv.appendChild(label);
+            });
+          } else {
+            const input = document.createElement("input");
+            input.type = "text";
+            input.name = `question-${index}`;
+            input.placeholder = "Votre réponse ici...";
+            input.style.width = "100%";
+            input.style.padding = "8px";
+            input.style.borderRadius = "5px";
+            input.style.border = "1px solid #ccc";
+            questionDiv.appendChild(input);
+          }
+
+          form.appendChild(questionDiv);
+        });
+
+        const submitBtn = document.createElement("button");
+        submitBtn.textContent = "Soumettre";
+        submitBtn.type = "submit";
+        form.appendChild(submitBtn);
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          submitBtn.disabled = true;
+
+          const reponses = examData.questions.map((q, index) => {
+            const inputs = [...document.getElementsByName(`question-${index}`)];
+            if (q.choix && q.choix.length > 0) {
+              return inputs
+                .filter((input) => input.checked)
+                .map((input) => input.value);
+            } else {
+              return inputs[0].value;
+            }
+          });
+
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const payload = {
+                examId: lienUnique,
+                reponses,
+                geolocalisation: {
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                },
+              };
+
+              try {
+                const res = await fetch("/examens/soumettre", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                  document.getElementById(
+                    "resultat"
+                  ).innerHTML = `<h2>Score: ${result.score} / 100</h2>`;
+                } else {
+                  document.getElementById(
+                    "resultat"
+                  ).innerHTML = `<p>Erreur: ${result.message}</p>`;
+                }
+              } catch (err) {
+                document.getElementById(
+                  "resultat"
+                ).innerHTML = `<p>Erreur serveur</p>`;
+              }
+            },
+            (err) => {
+              document.getElementById(
+                "resultat"
+              ).innerHTML = `<p>Erreur géolocalisation: ${err.message}</p>`;
+            }
+          );
+        });
+      }
+
+      function demarrerTimer(minutes) {
+        let tempsRestant = minutes * 60;
+
+        const intervalId = setInterval(() => {
+          const min = Math.floor(tempsRestant / 60);
+          const sec = tempsRestant % 60;
+          document.getElementById("time").textContent = `${min
+            .toString()
+            .padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+          if (tempsRestant <= 0) {
+            clearInterval(intervalId);
+            soumettreAuto();
+          }
+          tempsRestant--;
+        }, 1000);
+      }
+
+      async function soumettreAuto() {
+        const submitBtn = document.querySelector(
+          "#exam-form button[type='submit']"
+        );
+        if (submitBtn) submitBtn.disabled = true;
+
+        const inputsByQuestion = examData.questions.map((q, index) => {
+          const inputs = [...document.getElementsByName(`question-${index}`)];
+          if (q.choix && q.choix.length > 0) {
+            const selected = inputs.find((input) => input.checked);
+            return selected ? selected.value : "";
+          } else {
+            return inputs[0].value;
+          }
+        });
+
+        try {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const payload = {
+                examId: document.getElementById("lien-unique").value.trim(),
+                reponses: inputsByQuestion,
+                geolocalisation: {
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                },
+              };
+
+              const res = await fetch("/examens/soumettre", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+
+              const result = await res.json();
+              if (result.success) {
+                document.getElementById(
+                  "resultat"
+                ).innerHTML = `<h2>Score automatique : ${result.score} / 100</h2>`;
+              } else {
+                document.getElementById(
+                  "resultat"
+                ).innerHTML = `<p>Erreur : ${result.message}</p>`;
+              }
+            },
+            (err) => {
+              document.getElementById(
+                "resultat"
+              ).innerHTML = `<p>Erreur géolocalisation : ${err.message}</p>`;
+            }
+          );
+        } catch (err) {
+          document.getElementById(
+            "resultat"
+          ).innerHTML = `<p>Erreur lors de la soumission automatique</p>`;
+        }
+      }
+    </script>
+  </body>
+</html>

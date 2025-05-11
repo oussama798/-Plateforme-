@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Créer Examen</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f7f7f7;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      button {
+        background: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      .question-section {
+        background: #fff;
+        padding: 20px;
+        margin-top: 30px;
+        border-radius: 8px;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      }
+      #lien-container {
+        margin-top: 20px;
+        padding: 10px;
+        background: #e8f5e9;
+        border: 1px solid #c8e6c9;
+        border-radius: 4px;
+        color: #2e7d32;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Créer un Examen</h1>
+    <form id="examForm">
+      <div class="form-group">
+        <label>Titre:</label>
+        <input type="text" id="titre" required />
+      </div>
+      <div class="form-group">
+        <label>Description:</label>
+        <textarea id="description" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Public:</label>
+        <input type="text" id="public" value="Tous" />
+      </div>
+    </form>
+
+    <div class="question-section">
+      <h2>Ajouter une Question</h2>
+      <form id="questionForm">
+        <div class="form-group">
+          <label for="type">Type de Question :</label>
+          <select id="type" name="type">
+            <option value="directe">Question Directe</option>
+            <option value="qcm">QCM</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="contenu">Énoncé :</label>
+          <textarea id="contenu" name="contenu" rows="3" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="media">Média (URL):</label>
+          <input type="text" id="media" name="media" />
+        </div>
+
+        <div id="directeFields">
+          <div class="form-group">
+            <label for="reponse_directe">Réponse Directe :</label>
+            <input type="text" id="reponse_directe" name="reponse_directe" />
+          </div>
+          <div class="form-group">
+            <label for="tolerance">Tolérance (%) :</label>
+            <input
+              type="number"
+              id="tolerance"
+              name="tolerance"
+              min="0"
+              max="100"
+            />
+          </div>
+        </div>
+
+        <div id="qcmFields" style="display: none">
+          <div class="form-group">
+            <label for="options">Options (séparées par ,) :</label>
+            <input type="text" id="options" name="options" />
+          </div>
+          <div class="form-group">
+            <label for="reponses_correctes">Réponses Correctes :</label>
+            <input
+              type="text"
+              id="reponses_correctes"
+              name="reponses_correctes"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="note">Note :</label>
+          <input type="number" id="note" name="note" required />
+        </div>
+        <div class="form-group">
+          <label for="duree">Durée (secondes) :</label>
+          <input type="number" id="duree" name="duree" required />
+        </div>
+
+        <button type="submit">Ajouter la Question</button>
+      </form>
+
+      <div class="message" id="message"></div>
+
+      <button onclick="submitExam()">
+        📤 Créer l'examen avec les questions
+      </button>
+
+      <!-- ✅ Lien de l'examen généré -->
+      <div id="lien-container" style="display: none"></div>
+    </div>
+
+    <script>
+      const typeSelect = document.getElementById("type");
+      const directeFields = document.getElementById("directeFields");
+      const qcmFields = document.getElementById("qcmFields");
+      const questions = [];
+
+      typeSelect.addEventListener("change", () => {
+        if (typeSelect.value === "qcm") {
+          qcmFields.style.display = "block";
+          directeFields.style.display = "none";
+        } else {
+          qcmFields.style.display = "none";
+          directeFields.style.display = "block";
+        }
+      });
+
+      document
+        .getElementById("questionForm")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          const type = typeSelect.value;
+          const enonce = document.getElementById("contenu").value;
+
+          let question = {
+            enonce,
+            choix: [],
+            reponseCorrecte: "",
+          };
+
+          if (type === "directe") {
+            question.reponseCorrecte =
+              document.getElementById("reponse_directe").value;
+          } else {
+            question.choix = document
+              .getElementById("options")
+              .value.split(",")
+              .map((opt) => opt.trim());
+            const reponses = document
+              .getElementById("reponses_correctes")
+              .value.split(",")
+              .map((r) => r.trim());
+            question.reponseCorrecte = reponses[0]; // simplifié
+          }
+
+          questions.push(question);
+
+          document.getElementById("message").textContent =
+            "✅ Question ajoutée à l'examen.";
+          document.getElementById("message").style.color = "green";
+          document.getElementById("questionForm").reset();
+          typeSelect.value = "directe";
+          qcmFields.style.display = "none";
+          directeFields.style.display = "block";
+        });
+
+      async function submitExam() {
+        const titre = document.getElementById("titre").value;
+        const description = document.getElementById("description").value;
+
+        const response = await fetch("/creer-examen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ titre, description, questions }),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          const lien = `${window.location.origin}/examens/${result.lien_unique}`;
+          const lienContainer = document.getElementById("lien-container");
+          lienContainer.innerHTML = `🔗 Lien généré : <a href="${lien}" target="_blank">${lien}</a>`;
+          lienContainer.style.display = "block";
+        } else {
+          alert("❌ Erreur : " + result.message);
+        }
+      }
+    </script>
+  </body>
+</html>
