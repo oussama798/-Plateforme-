@@ -337,7 +337,7 @@ app.post("/examens/soumettre", async (req, res) => {
     });
     await examen.save();
 
-    return res.json({ success: true, score });
+    return res.json({ success: true, score, geolocalisation });
   } catch (err) {
     console.error(err);
     return res.json({ success: false, message: "Erreur serveur." });

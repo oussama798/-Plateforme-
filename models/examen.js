@@ -125,3 +125,4 @@ if ("geolocation" in navigator) {
 
 // ✅ Lancer le chargement des questions
 chargerQuestions();
+

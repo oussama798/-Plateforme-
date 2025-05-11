@@ -66,18 +66,18 @@
     </style>
   </head>
   <body>
-    <h1>أدخل الرابط الخاص بالامتحان</h1>
+    <h1>Entrez le lien de l'examen:</h1>
 
     <form id="exam-link-form">
-      <label for="lien-unique">الرابط الفريد للامتحان:</label>
+      <label for="lien-unique">Le lien unique de l'examen:</label>
       <input
         type="text"
         id="lien-unique"
         name="lien_unique"
         required
-        placeholder="أدخل الرابط الفريد هنا"
+        placeholder="Entrez le lien unique ici"
       />
-      <button type="submit">الولوج للامتحان</button>
+      <button type="submit">Accès à l'examen</button>
     </form>
 
     <div id="exam-container" style="display: none">
@@ -88,7 +88,7 @@
     </div>
 
     <script>
-      let examData; // rendre global
+      let examData;
 
       document
         .getElementById("exam-link-form")
@@ -102,7 +102,6 @@
           if (lienUnique) {
             document.getElementById("exam-link-form").style.display = "none";
             document.getElementById("exam-container").style.display = "block";
-
             chargerExamen(lienUnique);
           } else {
             alert("يرجى إدخال رابط فريد صالح.");
@@ -128,7 +127,7 @@
           questionDiv.appendChild(questionTitle);
 
           if (q.choix && q.choix.length > 0) {
-            q.choix.forEach((option, optIndex) => {
+            q.choix.forEach((option) => {
               const input = document.createElement("input");
               input.type = "checkbox";
               input.name = `question-${index}`;
@@ -195,9 +194,14 @@
 
                 const result = await res.json();
                 if (result.success) {
-                  document.getElementById(
-                    "resultat"
-                  ).innerHTML = `<h2>Score: ${result.score} / 100</h2>`;
+                  document.getElementById("resultat").innerHTML = `
+                    <h2>Score: ${result.score} / 100</h2>
+                    <p>📍 Votre position : Latitude = ${result.geolocalisation?.latitude?.toFixed(
+                      6
+                    )}, Longitude = ${result.geolocalisation?.longitude?.toFixed(
+                    6
+                  )}</p>
+                  `;
                 } else {
                   document.getElementById(
                     "resultat"
@@ -244,8 +248,7 @@
         const inputsByQuestion = examData.questions.map((q, index) => {
           const inputs = [...document.getElementsByName(`question-${index}`)];
           if (q.choix && q.choix.length > 0) {
-            const selected = inputs.find((input) => input.checked);
-            return selected ? selected.value : "";
+            return inputs.filter((i) => i.checked).map((i) => i.value);
           } else {
             return inputs[0].value;
           }
@@ -271,9 +274,14 @@
 
               const result = await res.json();
               if (result.success) {
-                document.getElementById(
-                  "resultat"
-                ).innerHTML = `<h2>Score automatique : ${result.score} / 100</h2>`;
+                document.getElementById("resultat").innerHTML = `
+                  <h2>Score automatique : ${result.score} / 100</h2>
+                  <p>📍 Latitude : ${result.geolocalisation?.latitude?.toFixed(
+                    6
+                  )}, Longitude : ${result.geolocalisation?.longitude?.toFixed(
+                  6
+                )}</p>
+                `;
               } else {
                 document.getElementById(
                   "resultat"
